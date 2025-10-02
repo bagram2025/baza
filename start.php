@@ -110,7 +110,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>🐘 PHP Test Page</h1>
+            <h1>🐘 PHP Testовай страница для php.</h1>
             <p>Senior Project - Testing PHP Functionality</p>
         </header>
         
