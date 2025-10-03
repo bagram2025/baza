@@ -1,0 +1,10 @@
+[all:vars]
+ansible_connection=ssh
+ansible_user=root
+
+[local]
+localhost ansible_connection=local
+
+[example_servers]
+# server1.example.com
+# server2.example.com

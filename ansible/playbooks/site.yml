@@ -1,0 +1,9 @@
+---
+- name: Example Playbook
+  hosts: local
+  become: yes
+  tasks:
+    - name: Ensure package is installed
+      package:
+        name: htop
+        state: present
