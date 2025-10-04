@@ -1,0 +1,103 @@
+---
+- name: Setup Redis for Baza Project
+  hosts: all
+  become: yes
+  vars:
+    redis_port: 6379
+    redis_bind: 127.0.0.1
+    redis_password: "{{ redis_default_password | default('your_secure_password_here') }}"
+    redis_maxmemory: "256mb"
+    redis_maxmemory_policy: "allkeys-lru"
+    project_user: "ubuntuuser"
+    project_path: "/home/ubuntuuser/baza"
+
+  tasks:
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install Redis server
+      apt:
+        name: redis-server
+        state: latest
+
+    - name: Create Redis configuration directory
+      file:
+        path: /etc/redis/instances
+        state: directory
+        owner: redis
+        group: redis
+        mode: '0755'
+
+    - name: Configure Redis for project
+      template:
+        src: redis-baza.conf.j2
+        dest: /etc/redis/instances/baza.conf
+        owner: redis
+        group: redis
+        mode: '0644'
+      notify: restart redis
+
+    - name: Create systemd service for Redis instance
+      template:
+        src: redis-baza.service.j2
+        dest: /etc/systemd/system/redis-baza.service
+        mode: '0644'
+      notify: reload systemd
+
+    - name: Create Redis data directory
+      file:
+        path: "{{ project_path }}/redis"
+        state: directory
+        owner: "{{ project_user }}"
+        group: "{{ project_user }}"
+        mode: '0755'
+
+    - name: Ensure Redis is started and enabled
+      systemd:
+        name: redis-baza
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Install Python Redis client (for testing)
+      pip:
+        name: redis
+        executable: pip3
+
+    - name: Create test PHP script for Redis
+      template:
+        src: redis-test.php.j2
+        dest: "{{ project_path }}/www/redis-test.php"
+        owner: "{{ project_user }}"
+        group: "{{ project_user }}"
+        mode: '0644'
+
+    - name: Create Python test script for Redis
+      template:
+        src: redis-test.py.j2
+        dest: "{{ project_path }}/www/redis-test.py"
+        owner: "{{ project_user }}"
+        group: "{{ project_user }}"
+        mode: '0644'
+
+    - name: Test Redis connection
+      shell: |
+        redis-cli -p {{ redis_port }} -a {{ redis_password }} ping
+      register: redis_test
+      changed_when: false
+
+    - name: Show Redis test result
+      debug:
+        msg: "{{ redis_test.stdout }}"
+
+  handlers:
+    - name: restart redis
+      systemd:
+        name: redis-baza
+        state: restarted
+
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
