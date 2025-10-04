@@ -1,0 +1,108 @@
+---
+- name: Setup FastAPI Web Interface
+  hosts: localhost
+  connection: local
+  
+  vars:
+    fastapi_port: 8001
+    project_path: "/home/ubuntuuser/baza"
+
+  tasks:
+    - name: Create web test page
+      copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>FastAPI Test</title>
+              <link rel="stylesheet" href="/static/style.css">
+              <style>
+                  .response {
+                      background: #1a1a1a;
+                      color: #0f0;
+                      padding: 15px;
+                      border-radius: 5px;
+                      margin: 15px 0;
+                      font-family: monospace;
+                      white-space: pre-wrap;
+                  }
+                  .btn-group {
+                      display: flex;
+                      gap: 10px;
+                      flex-wrap: wrap;
+                      margin: 15px 0;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <div class="header">
+                      <h1>⚡ FastAPI Test</h1>
+                      <p>Тестирование API сервиса</p>
+                  </div>
+
+                  <div class="service-card">
+                      <h2>API Endpoints</h2>
+                      
+                      <div class="btn-group">
+                          <button onclick="testAPI('/')" class="btn">Главная</button>
+                          <button onclick="testAPI('/health')" class="btn btn-api">Health</button>
+                          <button onclick="testAPI('/items')" class="btn btn-secondary">Товары</button>
+                          <button onclick="testAPI('/info')" class="btn">Инфо</button>
+                          <a href="http://127.0.0.1:{{ fastapi_port }}/docs" target="_blank" class="btn btn-api">📚 Swagger</a>
+                          <a href="http://127.0.0.1:{{ fastapi_port }}/redoc" target="_blank" class="btn btn-secondary">📖 ReDoc</a>
+                      </div>
+
+                      <div id="result" class="response">
+                          Нажмите кнопку для теста API...
+                      </div>
+                  </div>
+
+                  <div style="text-align: center;">
+                      <a href="/" class="btn">← На главную</a>
+                  </div>
+              </div>
+
+              <script>
+                  async function testAPI(endpoint) {
+                      const result = document.getElementById('result');
+                      result.textContent = 'Запрос к ' + endpoint + '...';
+                      
+                      try {
+                          const response = await fetch('http://127.0.0.1:{{ fastapi_port }}' + endpoint);
+                          const data = await response.json();
+                          result.textContent = JSON.stringify(data, null, 2);
+                      } catch (error) {
+                          result.textContent = '❌ Ошибка: ' + error.message;
+                      }
+                  }
+
+                  // Авто-тест при загрузке
+                  testAPI('/health');
+              </script>
+          </body>
+          </html>
+        dest: "{{ project_path }}/www/fastapi-test.html"
+        owner: ubuntuuser
+        group: ubuntuuser
+        mode: '0644'
+
+    - name: Update main page with FastAPI link
+      lineinfile:
+        path: "{{ project_path }}/www/index.html"
+        insertbefore: '<!-- Flask приложение -->'
+        line: |
+              <article class="service-card">
+                  <h2>⚡ FastAPI</h2>
+                  <p>Современное Python API</p>
+                  <div class="status-line">
+                      <span class="status status-online"></span>
+                      <span>Статус: Порт {{ fastapi_port }}</span>
+                  </div>
+                  <div class="button-group">
+                      <a href="/fastapi-test.html" class="btn">Тест API</a>
+                      <a href="http://127.0.0.1:{{ fastapi_port }}/docs" target="_blank" class="btn btn-api">Swagger</a>
+                      <a href="http://127.0.0.1:{{ fastapi_port }}/redoc" target="_blank" class="btn btn-secondary">ReDoc</a>
+                  </div>
+              </article>
+        state: present
