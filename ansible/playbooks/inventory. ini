@@ -1,0 +1,6 @@
+[webservers]
+81.94.156.217 ansible_user=ubuntuuser ansible_ssh_private_key_file=~/.ssh/your_private_key
+
+[webservers:vars]
+ansible_connection=ssh
+redis_default_password=your_secure_password_123
