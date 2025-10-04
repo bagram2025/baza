@@ -26,10 +26,23 @@
         name: php-redis
         state: present
 
-    - name: Install Python Redis client
+    - name: Install Python3 venv for isolated environment
+      apt:
+        name: python3-venv
+        state: present
+
+    - name: Create virtual environment for Python packages
+      become_user: ubuntuuser
+      command:
+        cmd: python3 -m venv /home/ubuntuuser/venv
+        creates: /home/ubuntuuser/venv/bin/activate
+
+    - name: Install Redis Python client in virtual environment
+      become_user: ubuntuuser
       pip:
         name: redis
-        executable: pip3
+        virtualenv: /home/ubuntuuser/venv
+        virtualenv_python: python3
 
     - name: Backup original Redis config
       copy:
@@ -157,19 +170,14 @@
                           $hash_data = $redis->hgetall('demo:hash');
                           echo '<p><strong>Hash:</strong> ' . json_encode($hash_data) . '</p>';
                           
-                          // Множества
-                          $redis->sadd('demo:set', 'php', 'python', 'redis', 'nginx');
-                          $set_items = $redis->smembers('demo:set');
-                          echo '<p><strong>Set:</strong> ' . implode(', ', $set_items) . '</p>';
-                          
                       } catch (Exception $e) {
                           echo '<div style="color: red; font-weight: bold;">❌ Ошибка: ' . $e->getMessage() . '</div>';
                           echo '<p>Проверьте:</p>';
-                          <ul>
-                          <li>Установлен ли php-redis: <code>sudo apt install php-redis</code></li>
-                          <li>Запущен ли Redis: <code>sudo systemctl status redis-server</code></li>
-                          <li>Правильный ли пароль в конфигурации</li>
-                          </ul>';
+                          echo '<ul>';
+                          echo '<li>Установлен ли php-redis: <code>sudo apt install php-redis</code></li>';
+                          echo '<li>Запущен ли Redis: <code>sudo systemctl status redis-server</code></li>';
+                          echo '<li>Правильный ли пароль в конфигурации</li>';
+                          echo '</ul>';
                       }
                       ?>
                       <div style="text-align: center; margin-top: 20px;">
@@ -184,12 +192,42 @@
         group: ubuntuuser
         mode: '0644'
 
-    - name: Create Python Redis test
+    - name: Create Python Redis test using system Python
       copy:
         content: |
           #!/usr/bin/env python3
-          import redis
-          import json
+          import subprocess
+          import sys
+          
+          # Попробуем несколько способов импорта redis
+          try:
+              import redis
+          except ImportError:
+              try:
+                  # Попробуем использовать redis из системных пакетов
+                  subprocess.check_call([sys.executable, "-c", "import redis"])
+              except:
+                  print("Content-Type: text/html; charset=utf-8\n")
+                  print("""
+                  <html>
+                  <head><title>Redis Python Test</title>
+                  <link rel="stylesheet" href="/static/style.css">
+                  </head>
+                  <body>
+                  <div class="container">
+                      <div class="header"><h1>🔴 Redis Python Test</h1></div>
+                      <div class="service-card">
+                          <h2 style='color: orange;'>⚠️ Redis Python client not installed</h2>
+                          <p>Install with: <code>sudo apt install python3-redis</code></p>
+                          <div style="text-align: center; margin-top: 20px;">
+                              <a href="/" class="btn">← На главную</a>
+                          </div>
+                      </div>
+                  </div>
+                  </body>
+                  </html>
+                  """)
+                  sys.exit(0)
           
           print("Content-Type: text/html; charset=utf-8\n")
           print("""
@@ -228,7 +266,7 @@
               print(f"<p><strong>Memory used:</strong> {info['used_memory_human']}</p>")
               
           except Exception as e:
-              print(f"<h2 style='color: red;'>❌ Ошибка: {e}</h2>")
+              print(f"<h2 style='color: red;'>❌ Ошибка подключения: {e}</h2>")
           
           print("""
                   <div style="text-align: center; margin-top: 20px;">
@@ -243,6 +281,11 @@
         owner: ubuntuuser
         group: ubuntuuser
         mode: '0755'
+
+    - name: Install system Python Redis package (alternative)
+      apt:
+        name: python3-redis
+        state: present
 
     - name: Show connection information
       debug:
