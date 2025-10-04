@@ -3,282 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Главная страница проекта</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
-            padding: 20px;
-        }
-
-        .header h1 {
-            font-size: 3em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-
-        .service-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            text-align: center;
-        }
-
-        .service-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-        }
-
-        .service-card h2 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.8em;
-        }
-
-        .service-card p {
-            color: #666;
-            margin-bottom: 20px;
-            line-height: 1.6;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            text-decoration: none;
-            border-radius: 25px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-        }
-
-        .btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-        }
-
-        .btn-api {
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-        }
-
-        .btn-django {
-            background: linear-gradient(135deg, #43e97b, #38f9d7);
-        }
-
-        .btn-flask {
-            background: linear-gradient(135deg, #fa709a, #fee140);
-        }
-
-        .status {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-
-        .status-online {
-            background: #4CAF50;
-        }
-
-        .status-offline {
-            background: #f44336;
-        }
-
-        .footer {
-            text-align: center;
-            color: white;
-            margin-top: 40px;
-            padding: 20px;
-            opacity: 0.8;
-        }
-
-        .api-docs {
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            color: white;
-        }
-
-        .api-docs h3 {
-            margin-bottom: 15px;
-        }
-
-        .endpoint {
-            background: rgba(255,255,255,0.1);
-            padding: 10px;
-            border-radius: 5px;
-            margin: 5px 0;
-            font-family: monospace;
-        }
-
-        @media (max-width: 768px) {
-            .services-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .header h1 {
-                font-size: 2em;
-            }
-        }
-    </style>
+    <title>Проект Baza - 81.94.156.217</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <header class="header">
             <h1>🚀 Проект Baza</h1>
-            <p>Многофункциональная веб-платформа с различными сервисами</p>
-        </div>
+            <p class="subtitle">Многофункциональная веб-платформа</p>
+            <div class="ip-address">
+                <code>81.94.156.217:8080</code>
+                <button class="copy-ip" onclick="copyIP()">📋</button>
+            </div>
+        </header>
 
-        <div class="services-grid">
-            <!-- Основное приложение -->
-            <div class="service-card">
+        <nav class="quick-links">
+            <h3>⚡ Быстрый доступ</h3>
+            <div class="links-grid">
+                <div class="link-item">
+                    <a href="/" target="_blank">Главная страница</a>
+                </div>
+                <div class="link-item">
+                    <a href="/api/docs" target="_blank">API Документация</a>
+                </div>
+                <div class="link-item">
+                    <a href="/flask/" target="_blank">Flask приложение</a>
+                </div>
+                <div class="link-item">
+                    <a href="/django/" target="_blank">Django приложение</a>
+                </div>
+            </div>
+        </nav>
+
+        <main class="services-grid">
+            <article class="service-card">
                 <h2>🌐 Основной сайт</h2>
                 <p>Главное веб-приложение проекта</p>
-                <p><span class="status status-online"></span> Статус: Онлайн</p>
-                <a href="/" class="btn">Перейти на сайт</a>
-            </div>
+                <div class="status-line">
+                    <span class="status status-online" id="main-status"></span>
+                    <span>Статус: Онлайн</span>
+                </div>
+                <div class="button-group">
+                    <a href="/" class="btn">Перейти на сайт</a>
+                    <a href="http://81.94.156.217:8080/" class="btn btn-secondary" target="_blank">Прямая ссылка</a>
+                </div>
+            </article>
 
-            <!-- FastAPI API -->
-            <div class="service-card">
+            <article class="service-card">
                 <h2>⚡ FastAPI API</h2>
                 <p>Быстрое API с автоматической документацией</p>
-                <p><span class="status status-online"></span> Статус: Онлайн</p>
-                <a href="/api/" class="btn btn-api">API Документация</a>
-                <a href="/api/docs" class="btn btn-secondary" style="margin-top: 10px;">Swagger UI</a>
-                <a href="/api/redoc" class="btn btn-secondary" style="margin-top: 10px;">ReDoc</a>
-            </div>
+                <div class="status-line">
+                    <span class="status status-online" id="api-status"></span>
+                    <span>Статус: Онлайн</span>
+                </div>
+                <div class="button-group">
+                    <a href="/api/" class="btn btn-api">API Документация</a>
+                    <a href="/api/docs" class="btn btn-secondary">Swagger UI</a>
+                    <a href="/api/redoc" class="btn btn-secondary">ReDoc</a>
+                </div>
+            </article>
 
-            <!-- FastAPI REST API -->
-            <div class="service-card">
+            <article class="service-card">
                 <h2>🔗 REST API</h2>
                 <p>Второе FastAPI приложение для REST endpoints</p>
-                <p><span class="status status-online"></span> Статус: Онлайн</p>
-                <a href="/restapi/" class="btn btn-api">REST API Документация</a>
-                <a href="/restapi/docs" class="btn btn-secondary" style="margin-top: 10px;">Swagger UI</a>
-            </div>
+                <div class="status-line">
+                    <span class="status status-online" id="restapi-status"></span>
+                    <span>Статус: Онлайн</span>
+                </div>
+                <div class="button-group">
+                    <a href="/restapi/" class="btn btn-api">REST API Документация</a>
+                    <a href="/restapi/docs" class="btn btn-secondary">Swagger UI</a>
+                </div>
+            </article>
 
-            <!-- Flask приложение -->
-            <div class="service-card">
+            <article class="service-card">
                 <h2>🐍 Flask App</h2>
                 <p>Веб-приложение на микрофреймворке Flask</p>
-                <p><span class="status status-online"></span> Статус: Онлайн</p>
-                <a href="/flask/" class="btn btn-flask">Открыть Flask App</a>
-            </div>
+                <div class="status-line">
+                    <span class="status status-online" id="flask-status"></span>
+                    <span>Статус: Онлайн</span>
+                </div>
+                <div class="button-group">
+                    <a href="/flask/" class="btn btn-flask">Открыть Flask App</a>
+                    <a href="http://81.94.156.217:8080/flask/" class="btn btn-secondary" target="_blank">Прямая ссылка</a>
+                </div>
+            </article>
 
-            <!-- Django -->
-            <div class="service-card">
+            <article class="service-card">
                 <h2>🎯 Django</h2>
                 <p>Полнофункциональное приложение на Django</p>
-                <p><span class="status status-online"></span> Статус: Онлайн</p>
-                <a href="/django/" class="btn btn-django">Открыть Django</a>
-                <a href="/django/admin/" class="btn btn-secondary" style="margin-top: 10px;">Админка</a>
-            </div>
+                <div class="status-line">
+                    <span class="status status-online" id="django-status"></span>
+                    <span>Статус: Онлайн</span>
+                </div>
+                <div class="button-group">
+                    <a href="/django/" class="btn btn-django">Открыть Django</a>
+                    <a href="/django/admin/" class="btn btn-secondary">Админка</a>
+                </div>
+            </article>
 
-            <!-- Статические файлы -->
-            <div class="service-card">
+            <article class="service-card">
                 <h2>📁 Статические файлы</h2>
                 <p>CSS, JavaScript, изображения и другие ресурсы</p>
-                <p><span class="status status-online"></span> Статус: Онлайн</p>
-                <a href="/static/style.css" class="btn">CSS файл</a>
-                <a href="/static/script.js" class="btn" style="margin-top: 10px;">JavaScript файл</a>
-            </div>
-        </div>
+                <div class="status-line">
+                    <span class="status status-online"></span>
+                    <span>Статус: Онлайн</span>
+                </div>
+                <div class="button-group">
+                    <a href="/static/style.css" class="btn">CSS файл</a>
+                    <a href="/static/script.js" class="btn">JavaScript файл</a>
+                    <a href="/static/robots.txt" class="btn">Robots.txt</a>
+                </div>
+            </article>
+        </main>
 
-        <!-- Документация API -->
-        <div class="api-docs">
-            <h3>📚 Быстрые ссылки API</h3>
-            <div class="endpoint">GET /api/items - Получить все элементы</div>
-            <div class="endpoint">POST /api/items - Создать новый элемент</div>
-            <div class="endpoint">GET /api/items/{id} - Получить элемент по ID</div>
-            <div class="endpoint">GET /restapi/users - Получить список пользователей</div>
-            <div class="endpoint">POST /restapi/auth - Аутентификация</div>
-        </div>
-
-        <!-- Информация о сервере -->
-        <div class="api-docs">
+        <section class="server-info">
             <h3>🖥️ Информация о сервере</h3>
-            <p><strong>Порт nginx:</strong> 8080</p>
-            <p><strong>Основное приложение:</strong> порт 8000</p>
-            <p><strong>FastAPI API:</strong> порт 8001</p>
-            <p><strong>REST API:</strong> порт 8002</p>
-            <p><strong>Flask:</strong> порт 8003</p>
-            <p><strong>Django:</strong> порт 8004</p>
-        </div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>IP-адрес:</strong><br>
+                    81.94.156.217
+                </div>
+                <div class="info-item">
+                    <strong>Порт nginx:</strong><br>
+                    8080
+                </div>
+                <div class="info-item">
+                    <strong>Основное приложение:</strong><br>
+                    порт 8000
+                </div>
+                <div class="info-item">
+                    <strong>FastAPI API:</strong><br>
+                    порт 8001
+                </div>
+                <div class="info-item">
+                    <strong>REST API:</strong><br>
+                    порт 8002
+                </div>
+                <div class="info-item">
+                    <strong>Flask:</strong><br>
+                    порт 8003
+                </div>
+                <div class="info-item">
+                    <strong>Django:</strong><br>
+                    порт 8004
+                </div>
+                <div class="info-item">
+                    <strong>Операционная система:</strong><br>
+                    Ubuntu
+                </div>
+            </div>
+        </section>
 
-        <div class="footer">
-            <p>© 2024 Проект Baza. Все права защищены.</p>
-            <p>Версия 1.0.0 | Сервер: Ubuntu</p>
-        </div>
+        <section class="server-info">
+            <h3>📚 Эндпоинты API</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>FastAPI:</strong><br>
+                    GET /api/items<br>
+                    POST /api/items<br>
+                    GET /api/items/{id}
+                </div>
+                <div class="info-item">
+                    <strong>REST API:</strong><br>
+                    GET /restapi/users<br>
+                    POST /restapi/auth<br>
+                    GET /restapi/health
+                </div>
+                <div class="info-item">
+                    <strong>Flask:</strong><br>
+                    GET /flask/<br>
+                    GET /flask/health<br>
+                    POST /flask/data
+                </div>
+                <div class="info-item">
+                    <strong>Django:</strong><br>
+                    GET /django/admin/<br>
+                    GET /django/api/<br>
+                    POST /django/api/
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>© 2024 Проект Baza. Сервер: 81.94.156.217:8080</p>
+            <p>Версия 1.0.0 | Ubuntu Server | <span id="server-timestamp"></span></p>
+        </footer>
     </div>
 
-    <script>
-        // Простой скрипт для проверки статуса сервисов
-        document.addEventListener('DOMContentLoaded', function() {
-            const services = [
-                { name: 'Основной сайт', url: '/' },
-                { name: 'FastAPI API', url: '/api/docs' },
-                { name: 'REST API', url: '/restapi/docs' },
-                { name: 'Flask', url: '/flask/' },
-                { name: 'Django', url: '/django/' }
-            ];
-
-            // Функция для проверки статуса (можно расширить для реальных проверок)
-            function checkServiceStatus(serviceUrl) {
-                return new Promise((resolve) => {
-                    // В реальном приложении здесь был бы fetch запрос
-                    // Для демонстрации считаем все сервисы онлайн
-                    setTimeout(() => resolve(true), 100);
-                });
-            }
-
-            // Обновление статусов (заглушка)
-            services.forEach(service => {
-                checkServiceStatus(service.url).then(isOnline => {
-                    console.log(`${service.name}: ${isOnline ? 'Online' : 'Offline'}`);
-                });
-            });
-        });
-    </script>
+    <script src="/static/script.js"></script>
 </body>
 </html>
