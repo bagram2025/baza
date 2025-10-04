@@ -1,16 +1,17 @@
 server {
     listen 8080;
-    server_name localhost;
+    server_name 81.94.156.217;
     
     # Корневая директория проекта
     root /home/ubuntuuser/baza/www;
+    index index.html;
     
-    # Статические файлы
+    # Статические файлы - ОБЯЗАТЕЛЬНО ДОБАВИТЬ
     location /static/ {
         alias /home/ubuntuuser/baza/www/static/;
         expires 30d;
         add_header Cache-Control "public, immutable";
-        autoindex off;
+        access_log off;
     }
 
     # Основное приложение (Flask на порту 8000)
@@ -68,13 +69,20 @@ server {
     }
 
     # Обработка ошибок
+    error_page 404 /404.html;
     error_page 500 502 503 504 /50x.html;
+    
     location = /50x.html {
         root /usr/share/nginx/html;
     }
 
-    # Безопасность - скрыть версию nginx
+    # Безопасность
     server_tokens off;
+    
+    # Заголовки безопасности
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
 
     # Логи
     access_log /var/log/nginx/baza-access.log;
