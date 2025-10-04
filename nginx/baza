@@ -19,12 +19,29 @@ server {
     }
 
     # Обработка Python файлов (через CGI)
-    location ~ \.py$ {
-        include fastcgi_params;
-        fastcgi_pass unix:/var/run/fcgiwrap.socket;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-    }
+  #  location ~ \.py$ {
+  #      include fastcgi_params;
+    #    fastcgi_pass unix:/var/run/fcgiwrap.socket;
+   #     fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+   # }
 
+
+
+# Обработка Python файлов через CGI
+location ~ \.py$ {
+    root /home/ubuntuuser/baza/www;
+    add_header Content-Type text/plain;
+    gzip off;
+    include fastcgi_params;
+    fastcgi_pass unix:/var/run/fcgiwrap.socket;
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    
+    # Безопасность - запрещаем доступ к системным файлам
+    location ~ /(system|file_list|config)\.py$ {
+        deny all;
+        return 404;
+    }
+}
     # Статические файлы
     location /static/ {
         alias /home/ubuntuuser/baza/www/static/;
