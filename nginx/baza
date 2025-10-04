@@ -3,19 +3,33 @@ server {
     server_name 81.94.156.217;
     
     root /home/ubuntuuser/baza/www;
-    index index.html;
+    index index.php index.html index.py;
 
-    # Главная страница и статические файлы
+    # Главная страница
     location / {
         try_files $uri $uri/ /index.html;
     }
 
-    # Статические файлы с кэшированием
+    # Обработка PHP файлов
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    # Обработка Python файлов (через CGI)
+    location ~ \.py$ {
+        include fastcgi_params;
+        fastcgi_pass unix:/var/run/fcgiwrap.socket;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+
+    # Статические файлы
     location /static/ {
         alias /home/ubuntuuser/baza/www/static/;
         expires 1y;
         add_header Cache-Control "public, immutable";
-        access_log off;
     }
 
     # FastAPI API
@@ -25,27 +39,18 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # Для WebSocket поддержки
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
     }
 
-    # FastAPI REST API
+    # REST API
     location /restapi/ {
         proxy_pass http://127.0.0.1:8002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
     }
 
-    # Flask приложение
+    # Flask
     location /flask/ {
         proxy_pass http://127.0.0.1:8003;
         proxy_set_header Host $host;
@@ -63,15 +68,7 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Безопасность
     server_tokens off;
-    
-    # Заголовки безопасности
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header X-Content-Type-Options "nosniff" always;
-
-    # Логи
     access_log /var/log/nginx/baza-access.log;
     error_log /var/log/nginx/baza-error.log;
 }
