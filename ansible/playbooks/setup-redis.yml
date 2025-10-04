@@ -1,14 +1,13 @@
 ---
-- name: Setup Redis for Baza Project
-  hosts: all
+- name: Install and Configure Redis on Local Server
+  hosts: localhost
+  connection: local
   become: yes
+  
   vars:
     redis_port: 6379
-    redis_bind: 127.0.0.1
-    redis_password: "{{ redis_default_password | default('your_secure_password_here') }}"
+    redis_password: "baza_redis_password_123"
     redis_maxmemory: "256mb"
-    redis_maxmemory_policy: "allkeys-lru"
-    project_user: "ubuntuuser"
     project_path: "/home/ubuntuuser/baza"
 
   tasks:
@@ -22,82 +21,241 @@
         name: redis-server
         state: latest
 
-    - name: Create Redis configuration directory
-      file:
-        path: /etc/redis/instances
-        state: directory
-        owner: redis
-        group: redis
-        mode: '0755'
+    - name: Install Redis PHP extension
+      apt:
+        name: php-redis
+        state: present
 
-    - name: Configure Redis for project
-      template:
-        src: redis-baza.conf.j2
-        dest: /etc/redis/instances/baza.conf
-        owner: redis
-        group: redis
-        mode: '0644'
-      notify: restart redis
-
-    - name: Create systemd service for Redis instance
-      template:
-        src: redis-baza.service.j2
-        dest: /etc/systemd/system/redis-baza.service
-        mode: '0644'
-      notify: reload systemd
-
-    - name: Create Redis data directory
-      file:
-        path: "{{ project_path }}/redis"
-        state: directory
-        owner: "{{ project_user }}"
-        group: "{{ project_user }}"
-        mode: '0755'
-
-    - name: Ensure Redis is started and enabled
-      systemd:
-        name: redis-baza
-        state: started
-        enabled: yes
-        daemon_reload: yes
-
-    - name: Install Python Redis client (for testing)
+    - name: Install Python Redis client
       pip:
         name: redis
         executable: pip3
 
-    - name: Create test PHP script for Redis
-      template:
-        src: redis-test.php.j2
-        dest: "{{ project_path }}/www/redis-test.php"
-        owner: "{{ project_user }}"
-        group: "{{ project_user }}"
+    - name: Backup original Redis config
+      copy:
+        src: /etc/redis/redis.conf
+        dest: /etc/redis/redis.conf.backup
+        remote_src: yes
+        owner: root
+        group: root
         mode: '0644'
 
-    - name: Create Python test script for Redis
-      template:
-        src: redis-test.py.j2
-        dest: "{{ project_path }}/www/redis-test.py"
-        owner: "{{ project_user }}"
-        group: "{{ project_user }}"
-        mode: '0644'
+    - name: Configure Redis to listen on localhost
+      lineinfile:
+        path: /etc/redis/redis.conf
+        regexp: '^bind '
+        line: 'bind 127.0.0.1'
+        backrefs: yes
+
+    - name: Set Redis password
+      lineinfile:
+        path: /etc/redis/redis.conf
+        regexp: '^# requirepass'
+        line: 'requirepass {{ redis_password }}'
+
+    - name: Set max memory
+      lineinfile:
+        path: /etc/redis/redis.conf
+        regexp: '^# maxmemory '
+        line: 'maxmemory {{ redis_maxmemory }}'
+
+    - name: Set max memory policy
+      lineinfile:
+        path: /etc/redis/redis.conf
+        regexp: '^# maxmemory-policy '
+        line: 'maxmemory-policy allkeys-lru'
+
+    - name: Enable Redis to start on boot
+      systemd:
+        name: redis-server
+        enabled: yes
+
+    - name: Restart Redis service
+      systemd:
+        name: redis-server
+        state: restarted
+
+    - name: Wait for Redis to start
+      wait_for:
+        port: 6379
+        host: 127.0.0.1
+        timeout: 10
 
     - name: Test Redis connection
       shell: |
-        redis-cli -p {{ redis_port }} -a {{ redis_password }} ping
+        redis-cli -a {{ redis_password }} ping
       register: redis_test
       changed_when: false
+      failed_when: "'PONG' not in redis_test.stdout"
 
     - name: Show Redis test result
       debug:
         msg: "{{ redis_test.stdout }}"
 
-  handlers:
-    - name: restart redis
-      systemd:
-        name: redis-baza
-        state: restarted
+    - name: Create Redis test data
+      shell: |
+        redis-cli -a {{ redis_password }} set "ansible:install:time" "{{ ansible_date_time.iso8601 }}"
+        redis-cli -a {{ redis_password }} set "project:baza:status" "active"
+        redis-cli -a {{ redis_password }} incr "project:baza:visits"
+      changed_when: false
 
-    - name: reload systemd
-      systemd:
-        daemon_reload: yes
+    - name: Create PHP Redis test page
+      copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Redis Test - Baza Project</title>
+              <link rel="stylesheet" href="/static/style.css">
+          </head>
+          <body>
+              <div class="container">
+                  <div class="header">
+                      <h1>🔴 Redis Test</h1>
+                      <p>Тестирование Redis на локальном сервере</p>
+                  </div>
+                  <div class="service-card">
+                      <h2>Redis Connection Status</h2>
+                      <?php
+                      try {
+                          $redis = new Redis();
+                          $redis->connect('127.0.0.1', 6379, 2.5);
+                          $redis->auth('{{ redis_password }}');
+                          
+                          echo '<div style="color: green; font-weight: bold;">✅ Redis подключен и работает!</div>';
+                          
+                          // Основная информация
+                          $info = $redis->info();
+                          $install_time = $redis->get('ansible:install:time');
+                          $project_status = $redis->get('project:baza:status');
+                          $visits = $redis->incr('web:page:visits');
+                          
+                          echo '<div style="margin: 20px 0;">';
+                          echo '<p><strong>Версия Redis:</strong> ' . $info['redis_version'] . '</p>';
+                          echo '<p><strong>Использовано памяти:</strong> ' . $info['used_memory_human'] . '</p>';
+                          echo '<p><strong>Подключений:</strong> ' . $info['connected_clients'] . '</p>';
+                          echo '<p><strong>Время установки:</strong> ' . ($install_time ?: 'Не установлено') . '</p>';
+                          echo '<p><strong>Статус проекта:</strong> ' . ($project_status ?: 'Не установлен') . '</p>';
+                          echo '<p><strong>Посещений страницы:</strong> ' . $visits . '</p>';
+                          echo '</div>';
+                          
+                          // Демонстрация работы с разными типами данных
+                          echo '<h3>Демонстрация работы:</h3>';
+                          
+                          // Строки
+                          $redis->set('demo:string', 'Hello Redis!');
+                          echo '<p><strong>String:</strong> ' . $redis->get('demo:string') . '</p>';
+                          
+                          // Списки
+                          $redis->lpush('demo:list', 'item1', 'item2', 'item3');
+                          $list_items = $redis->lrange('demo:list', 0, -1);
+                          echo '<p><strong>List:</strong> ' . implode(', ', $list_items) . '</p>';
+                          
+                          // Хэши
+                          $redis->hset('demo:hash', 'name', 'Baza Project');
+                          $redis->hset('demo:hash', 'redis_port', 6379);
+                          $hash_data = $redis->hgetall('demo:hash');
+                          echo '<p><strong>Hash:</strong> ' . json_encode($hash_data) . '</p>';
+                          
+                          // Множества
+                          $redis->sadd('demo:set', 'php', 'python', 'redis', 'nginx');
+                          $set_items = $redis->smembers('demo:set');
+                          echo '<p><strong>Set:</strong> ' . implode(', ', $set_items) . '</p>';
+                          
+                      } catch (Exception $e) {
+                          echo '<div style="color: red; font-weight: bold;">❌ Ошибка: ' . $e->getMessage() . '</div>';
+                          echo '<p>Проверьте:</p>';
+                          <ul>
+                          <li>Установлен ли php-redis: <code>sudo apt install php-redis</code></li>
+                          <li>Запущен ли Redis: <code>sudo systemctl status redis-server</code></li>
+                          <li>Правильный ли пароль в конфигурации</li>
+                          </ul>';
+                      }
+                      ?>
+                      <div style="text-align: center; margin-top: 20px;">
+                          <a href="/" class="btn">← На главную</a>
+                      </div>
+                  </div>
+              </div>
+          </body>
+          </html>
+        dest: "{{ project_path }}/www/redis-test.php"
+        owner: ubuntuuser
+        group: ubuntuuser
+        mode: '0644'
+
+    - name: Create Python Redis test
+      copy:
+        content: |
+          #!/usr/bin/env python3
+          import redis
+          import json
+          
+          print("Content-Type: text/html; charset=utf-8\n")
+          print("""
+          <html>
+          <head><title>Redis Python Test</title>
+          <link rel="stylesheet" href="/static/style.css">
+          </head>
+          <body>
+          <div class="container">
+              <div class="header"><h1>🔴 Redis Python Test</h1></div>
+              <div class="service-card">
+          """)
+          
+          try:
+              r = redis.Redis(
+                  host='127.0.0.1',
+                  port=6379,
+                  password='{{ redis_password }}',
+                  decode_responses=True
+              )
+              
+              r.ping()
+              print("<h2 style='color: green;'>✅ Redis подключен через Python!</h2>")
+              
+              # Тестовые операции
+              r.set('python:test', 'Hello from Python Redis!')
+              test_value = r.get('python:test')
+              visits = r.incr('python:visits')
+              
+              print(f"<p><strong>Python visits:</strong> {visits}</p>")
+              print(f"<p><strong>Test value:</strong> {test_value}</p>")
+              
+              # Информация о сервере
+              info = r.info()
+              print(f"<p><strong>Redis version:</strong> {info['redis_version']}</p>")
+              print(f"<p><strong>Memory used:</strong> {info['used_memory_human']}</p>")
+              
+          except Exception as e:
+              print(f"<h2 style='color: red;'>❌ Ошибка: {e}</h2>")
+          
+          print("""
+                  <div style="text-align: center; margin-top: 20px;">
+                      <a href="/" class="btn">← На главную</a>
+                  </div>
+              </div>
+          </div>
+          </body>
+          </html>
+          """)
+        dest: "{{ project_path }}/www/redis-python-test.py"
+        owner: ubuntuuser
+        group: ubuntuuser
+        mode: '0755'
+
+    - name: Show connection information
+      debug:
+        msg: |
+          Redis успешно установлен и настроен!
+          Порт: {{ redis_port }}
+          Хост: 127.0.0.1
+          Пароль: {{ redis_password }}
+          
+          Тестовые страницы:
+          - http://81.94.156.217:8080/redis-test.php
+          - http://81.94.156.217:8080/redis-python-test.py
+          
+          Команды для проверки:
+          - redis-cli -a {{ redis_password }} ping
+          - sudo systemctl status redis-server
