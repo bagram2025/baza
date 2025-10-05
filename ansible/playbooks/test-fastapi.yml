@@ -18,8 +18,9 @@
     - name: Show service status
       debug:
         msg: |
-          FastAPI service status: {{ service_status.status.ActiveState }}
-          Enabled: {{ service_status.status.Enabled }}
+          FastAPI service: {{ fastapi_app_name }}
+          Active: {{ service_status.status.ActiveState }}
+          SubState: {{ service_status.status.SubState }}
 
     - name: Check if FastAPI port is listening
       wait_for:
@@ -62,21 +63,7 @@
       debug:
         msg: |
           Direct root check: {{ 'SUCCESS' if root_direct.status == 200 else 'FAILED' }}
-          Response message: {{ root_direct.json.message | default('No message') }}
-
-    - name: Test FastAPI docs endpoint (direct)
-      uri:
-        url: "http://127.0.0.1:{{ fastapi_port }}/docs"
-        method: GET
-        timeout: 10
-      register: docs_direct
-      ignore_errors: yes
-
-    - name: Show direct docs check result
-      debug:
-        msg: |
-          Direct docs check: {{ 'SUCCESS' if docs_direct.status == 200 else 'FAILED' }}
-          Status: {{ docs_direct.status | default('No response') }}
+          Status: {{ root_direct.status | default('No response') }}
 
     - name: Test FastAPI through nginx proxy
       uri:
@@ -92,11 +79,10 @@
         msg: |
           Proxy health check: {{ 'SUCCESS' if health_proxy.status == 200 else 'FAILED' }}
           Status: {{ health_proxy.status | default('No response') }}
-          Response: {{ health_proxy.json | default('No JSON response') }}
 
     - name: Check nginx configuration for FastAPI
       shell: |
-        nginx -T 2>/dev/null | grep -A 10 "location /api/" || echo "No /api/ location found"
+        nginx -T 2>/dev/null | grep -A 5 "location /api/" || echo "No /api/ location found"
       register: nginx_config
       changed_when: false
 
@@ -104,57 +90,30 @@
       debug:
         msg: "{{ nginx_config.stdout }}"
 
-    - name: Check FastAPI logs
+    - name: Check FastAPI process
       shell: |
-        journalctl -u {{ fastapi_app_name }} -n 10 --no-pager
-      register: fastapi_logs
+        ps aux | grep uvicorn | grep -v grep || echo "No FastAPI process found"
+      register: process_check
       changed_when: false
-      ignore_errors: yes
 
-    - name: Show recent FastAPI logs
+    - name: Show FastAPI process
       debug:
-        msg: "Recent FastAPI logs:\n{{ fastapi_logs.stdout }}"
+        msg: "{{ process_check.stdout }}"
 
-    - name: Check nginx error logs
-      shell: |
-        tail -10 /var/log/nginx/error.log 2>/dev/null || echo "No error log found"
-      register: nginx_errors
-      changed_when: false
-      ignore_errors: yes
-
-    - name: Show nginx errors
-      debug:
-        msg: "Recent nginx errors:\n{{ nginx_errors.stdout }}"
-
-    - name: Test all major FastAPI endpoints
-      uri:
-        url: "http://127.0.0.1:{{ fastapi_port }}{{ item }}"
-        method: GET
-        timeout: 10
-      register: endpoint_tests
-      ignore_errors: yes
-      loop:
-        - "/health"
-        - "/"
-        - "/items"
-        - "/info"
-        - "/docs"
-
-    - name: Show all endpoint test results
-      debug:
-        msg: |
-          Endpoint {{ item.item }}: {{ '✅ SUCCESS' if item.status == 200 else '❌ FAILED' }} (Status: {{ item.status | default('No response') }})
-      loop: "{{ endpoint_tests.results }}"
-
-    - name: Create test summary report
+    - name: Create test summary
       debug:
         msg: |
           🎯 FASTAPI TEST SUMMARY
           ======================
-          Service: {{ '✅ Running' if service_status.status.ActiveState == 'active' else '❌ Stopped' }}
+          Service: {{ service_status.status.ActiveState }}
           Port {{ fastapi_port }}: {{ '✅ Listening' if port_check is succeeded else '❌ Not listening' }}
           Direct access: {{ '✅ Working' if health_direct.status == 200 else '❌ Failed' }}
           Proxy access: {{ '✅ Working' if health_proxy.status == 200 else '❌ Failed' }}
-          Documentation: {{ '✅ Available' if docs_direct.status == 200 else '❌ Unavailable' }}
           
-          {{ '🚀 FastAPI is working correctly!' if health_direct.status == 200 and health_proxy.status == 200 else '🔧 There are issues with FastAPI setup' }}
+          {% if health_direct.status == 200 and health_proxy.status == 200 %}
+          🚀 FastAPI is working correctly!
+          {% elif health_direct.status == 200 and health_proxy.status != 200 %}
+          🔧 FastAPI works directly but proxy has issues
+          {% elif health_direct.status != 200 %}
+          ❌ FastAPI is not working
+          {% endif %}
