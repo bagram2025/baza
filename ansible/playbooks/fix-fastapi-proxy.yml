@@ -1,0 +1,103 @@
+---
+- name: Fix FastAPI Nginx Proxy with PHP 8.3
+  hosts: localhost
+  connection: local
+  become: yes
+
+  tasks:
+    - name: Backup current nginx config
+      copy:
+        src: /etc/nginx/sites-available/baza-site
+        dest: /etc/nginx/sites-available/baza-site.backup
+        remote_src: yes
+
+    - name: Check PHP-FPM socket
+      shell: ls -la /var/run/php/php*.sock
+      register: php_sockets
+      changed_when: false
+
+    - name: Show PHP sockets
+      debug:
+        msg: "Available PHP sockets: {{ php_sockets.stdout }}"
+
+    - name: Create correct nginx configuration
+      copy:
+        content: |
+          server {
+              listen 8080;
+              server_name 81.94.156.217;
+              
+              root /home/ubuntuuser/baza/www;
+              index index.html index.php;
+
+              # Главная страница
+              location / {
+                  try_files $uri $uri/ /index.html;
+              }
+
+              # Статические файлы
+              location /static/ {
+                  alias /home/ubuntuuser/baza/www/static/;
+                  expires 1y;
+                  add_header Cache-Control "public, immutable";
+              }
+
+              # FastAPI прокси
+              location /api/ {
+                  proxy_pass http://127.0.0.1:8001/;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+
+              # Обработка PHP файлов для PHP 8.3
+              location ~ \.php$ {
+                  include snippets/fastcgi-php.conf;
+                  fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+                  fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                  include fastcgi_params;
+              }
+
+              # Для Python файлов - отдаем как текст
+              location ~ \.py$ {
+                  default_type text/plain;
+                  add_header Content-Type text/plain;
+              }
+
+              server_tokens off;
+              access_log /var/log/nginx/baza-access.log;
+              error_log /var/log/nginx/baza-error.log;
+          }
+        dest: /etc/nginx/sites-available/baza-site
+        mode: '0644'
+
+    - name: Test nginx configuration
+      command: nginx -t
+      register: nginx_test
+      changed_when: false
+
+    - name: Show nginx test result
+      debug:
+        msg: "Nginx config test: {{ '✅ PASSED' if nginx_test.rc == 0 else '❌ FAILED' }}"
+
+    - name: Reload nginx if config is valid
+      systemd:
+        name: nginx
+        state: reloaded
+      when: nginx_test.rc == 0
+
+    - name: Test proxy after fix
+      uri:
+        url: "http://127.0.0.1:8080/api/health"
+        method: GET
+        timeout: 10
+      register: proxy_test
+      ignore_errors: yes
+
+    - name: Show proxy test result
+      debug:
+        msg: |
+          Proxy test after fix: {{ '✅ SUCCESS' if proxy_test.status == 200 else '❌ STILL FAILED' }}
+          Status: {{ proxy_test.status | default('No response') }}
+          Response: {{ proxy_test.json | default('No data') }}
