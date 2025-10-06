@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FastAPI Тест - Baza Project</title>
+    <title>FastAPI Тест</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
         .api-response {
@@ -11,321 +11,104 @@
             color: #00ff00;
             padding: 15px;
             border-radius: 5px;
-            font-family: 'Courier New', monospace;
+            font-family: monospace;
             margin: 15px 0;
-            max-height: 400px;
+            max-height: 300px;
             overflow-y: auto;
             white-space: pre-wrap;
-            border: 1px solid #333;
         }
         .btn-group {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
             margin: 15px 0;
-            justify-content: center;
         }
-        .endpoint-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .endpoint-method {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 0.8em;
-            margin-right: 10px;
-        }
-        .method-get { background: #61affe; color: white; }
-        .method-post { background: #49cc90; color: white; }
         .form-group {
             margin: 15px 0;
             padding: 15px;
             background: #f8f9fa;
             border-radius: 5px;
         }
-        .form-group input {
-            padding: 8px;
-            margin: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            width: 200px;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            margin-left: 10px;
-        }
-        .status-online { background: #d4edda; color: #155724; }
-        .status-offline { background: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>⚡ FastAPI Тестовая Страница</h1>
-            <p>Проверка работы FastAPI с русской кодировкой</p>
-            <div class="ip-address">
-                Порт: 8001 | Сервер: 127.0.0.1
-                <span id="apiStatus" class="status-badge status-online">Проверка...</span>
-            </div>
+            <h1>⚡ FastAPI Тест</h1>
+            <p>Проверка работы через /api/ прокси</p>
         </div>
 
         <div class="service-card">
             <h2>🔧 Тестирование API</h2>
             
             <div class="btn-group">
-                <button onclick="testEndpoint('/')" class="btn">🏠 Главная</button>
-                <button onclick="testEndpoint('/health')" class="btn btn-api">❤️ Health Check</button>
-                <button onclick="testEndpoint('/items')" class="btn btn-secondary">📦 Товары</button>
-                <button onclick="testEndpoint('/info')" class="btn">ℹ️ Информация</button>
-                <a href="http://127.0.0.1:8001/docs" target="_blank" class="btn btn-api">📚 Swagger UI</a>
-                <a href="http://127.0.0.1:8001/redoc" target="_blank" class="btn btn-secondary">📖 ReDoc</a>
+                <button onclick="testEndpoint('/')" class="btn">Главная</button>
+                <button onclick="testEndpoint('/health')" class="btn btn-api">Health</button>
+                <button onclick="testEndpoint('/items')" class="btn btn-secondary">Товары</button>
+                <a href="/api/docs" target="_blank" class="btn btn-api">Swagger</a>
+                <a href="/api/redoc" target="_blank" class="btn btn-secondary">ReDoc</a>
             </div>
 
             <div id="response" class="api-response">
-                👆 Нажмите на кнопку выше для тестирования API...
+                Нажмите кнопку для тестирования...
             </div>
         </div>
 
         <div class="service-card">
-            <h2>🧪 Демонстрация работы с данными</h2>
+            <h2>🧪 Быстрые тесты</h2>
             
             <div class="form-group">
-                <h3>📝 Добавить новый товар</h3>
-                <input type="text" id="itemName" placeholder="Название товара" value="Новый товар">
-                <input type="text" id="itemDesc" placeholder="Описание" value="Описание нового товара">
-                <input type="number" id="itemPrice" placeholder="Цена" value="199.99" step="0.01">
-                <input type="text" id="itemCategory" placeholder="Категория" value="электроника">
-                <br>
-                <button onclick="createItem()" class="btn">➕ Создать товар</button>
+                <input type="number" id="searchId" placeholder="ID товара" value="0" style="padding: 8px; margin-right: 10px;">
+                <button onclick="searchItem()" class="btn">Найти товар</button>
+                <button onclick="runAllTests()" class="btn btn-api">Все тесты</button>
             </div>
-
-            <div class="form-group">
-                <h3>🔍 Поиск товара по ID</h3>
-                <input type="number" id="searchId" placeholder="ID товара" value="0" min="0">
-                <button onclick="searchItem()" class="btn btn-secondary">🔎 Найти товар</button>
-            </div>
-        </div>
-
-        <div class="service-card">
-            <h2>📋 Доступные эндпоинты</h2>
-            
-            <div class="endpoint-card">
-                <span class="endpoint-method method-get">GET</span>
-                <strong>/</strong> - Главная страница API
-            </div>
-            
-            <div class="endpoint-card">
-                <span class="endpoint-method method-get">GET</span>
-                <strong>/health</strong> - Проверка здоровья сервиса
-            </div>
-            
-            <div class="endpoint-card">
-                <span class="endpoint-method method-get">GET</span>
-                <strong>/items</strong> - Получить список всех товаров
-            </div>
-            
-            <div class="endpoint-card">
-                <span class="endpoint-method method-get">GET</span>
-                <strong>/items/{id}</strong> - Получить товар по ID
-            </div>
-            
-            <div class="endpoint-card">
-                <span class="endpoint-method method-get">GET</span>
-                <strong>/info</strong> - Информация о системе
-            </div>
-            
-            <div class="endpoint-card">
-                <span class="endpoint-method method-get">GET</span>
-                <strong>/docs</strong> - Интерактивная документация Swagger
-            </div>
-            
-            <div class="endpoint-card">
-                <span class="endpoint-method method-get">GET</span>
-                <strong>/redoc</strong> - Альтернативная документация ReDoc
-            </div>
-        </div>
-
-        <div class="service-card">
-            <h2>🛠️ Техническая информация</h2>
-            <p><strong>URL API:</strong> http://127.0.0.1:8001</p>
-            <p><strong>Порт:</strong> 8001</p>
-            <p><strong>Документация:</strong> Автоматически генерируется через Swagger</p>
-            <p><strong>Кодировка:</strong> UTF-8 (поддержка русского языка)</p>
-            <p><strong>Сервер:</strong> Uvicorn + FastAPI</p>
         </div>
 
         <div style="text-align: center; margin-top: 20px;">
-            <a href="/" class="btn">← На главную страницу</a>
-            <button onclick="runAllTests()" class="btn btn-api">🚀 Запустить все тесты</button>
+            <a href="/" class="btn">← На главную</a>
         </div>
     </div>
 
     <script>
-        const API_BASE = 'http://127.0.0.1:8001';
+        const API_BASE = '/api';
         
-        // Функция для тестирования эндпоинта
         async function testEndpoint(endpoint) {
             const responseElement = document.getElementById('response');
-            responseElement.innerHTML = `🔄 Запрос к ${endpoint}...`;
+            const url = `${API_BASE}${endpoint}`;
+            responseElement.innerHTML = `Запрос к ${url}...`;
             
             try {
-                const response = await fetch(`${API_BASE}${endpoint}`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
+                const response = await fetch(url);
                 const data = await response.json();
-                responseElement.innerHTML = `✅ Успешный ответ от ${endpoint}:\n\n${JSON.stringify(data, null, 2)}`;
-                
-                // Обновляем статус
-                updateApiStatus(true);
-                
+                responseElement.innerHTML = `✅ ${url}:\n\n${JSON.stringify(data, null, 2)}`;
             } catch (error) {
-                responseElement.innerHTML = `❌ Ошибка при запросе ${endpoint}:\n\n${error.message}`;
-                updateApiStatus(false);
+                responseElement.innerHTML = `❌ Ошибка: ${error.message}`;
             }
         }
         
-        // Функция для создания товара
-        async function createItem() {
-            const name = document.getElementById('itemName').value;
-            const description = document.getElementById('itemDesc').value;
-            const price = parseFloat(document.getElementById('itemPrice').value);
-            const category = document.getElementById('itemCategory').value;
-            
-            if (!name || !price) {
-                alert('Пожалуйста, заполните название и цену товара');
-                return;
-            }
-            
-            const responseElement = document.getElementById('response');
-            responseElement.innerHTML = '🔄 Создание нового товара...';
-            
-            try {
-                // В реальном FastAPI это был бы POST запрос
-                // Для демонстрации просто покажем данные
-                const newItem = {
-                    id: Date.now(), // временный ID
-                    name: name,
-                    description: description,
-                    price: price,
-                    category: category,
-                    created_at: new Date().toISOString()
-                };
-                
-                responseElement.innerHTML = `✅ Товар создан!\n\n${JSON.stringify(newItem, null, 2)}`;
-                
-                // Очищаем поля после успешного создания
-                document.getElementById('itemName').value = '';
-                document.getElementById('itemDesc').value = '';
-                document.getElementById('itemPrice').value = '';
-                document.getElementById('itemCategory').value = '';
-                
-            } catch (error) {
-                responseElement.innerHTML = `❌ Ошибка при создании товара:\n\n${error.message}`;
-            }
-        }
-        
-        // Функция для поиска товара
         async function searchItem() {
             const itemId = document.getElementById('searchId').value;
-            
-            if (!itemId && itemId !== '0') {
-                alert('Пожалуйста, введите ID товара');
-                return;
-            }
-            
             await testEndpoint(`/items/${itemId}`);
         }
         
-        // Функция для обновления статуса API
-        async function updateApiStatus(isOnline) {
-            const statusElement = document.getElementById('apiStatus');
-            if (isOnline) {
-                statusElement.textContent = '✅ Онлайн';
-                statusElement.className = 'status-badge status-online';
-            } else {
-                statusElement.textContent = '❌ Офлайн';
-                statusElement.className = 'status-badge status-offline';
-            }
-        }
-        
-        // Функция для запуска всех тестов
         async function runAllTests() {
-            const responseElement = document.getElementById('response');
-            responseElement.innerHTML = '🚀 Запуск всех тестов...\n\n';
-            
-            const endpoints = ['/health', '/items', '/info', '/'];
+            const endpoints = ['/health', '/', '/items', '/info'];
             let results = [];
             
             for (const endpoint of endpoints) {
                 try {
-                    const response = await fetch(`${API_BASE}${endpoint}`);
-                    const data = await response.json();
-                    results.push(`✅ ${endpoint} - УСПЕХ`);
+                    await fetch(`${API_BASE}${endpoint}`);
+                    results.push(`✅ ${endpoint}`);
                 } catch (error) {
-                    results.push(`❌ ${endpoint} - ОШИБКА: ${error.message}`);
+                    results.push(`❌ ${endpoint}`);
                 }
             }
             
-            responseElement.innerHTML = `📊 Результаты тестирования:\n\n${results.join('\n')}`;
-            updateApiStatus(results.filter(r => r.includes('✅')).length >= 2);
+            document.getElementById('response').innerHTML = `Результаты:\n\n${results.join('\n')}`;
         }
         
-        // Функция для проверки кодировки
-        function testEncoding() {
-            const testStrings = [
-                "Привет, мир!",
-                "Русский текст: тестирование кодировки",
-                "Специальные символы: € £ ¥ © ®",
-                "Цифры: 1234567890"
-            ];
-            
-            const responseElement = document.getElementById('response');
-            responseElement.innerHTML = `🔤 Тест кодировки UTF-8:\n\n${testStrings.join('\n')}`;
-        }
-        
-        // Автоматическая проверка при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            // Проверяем здоровье API при загрузке
-            testEndpoint('/health');
-            
-            // Тестируем русскую кодировку
-            setTimeout(testEncoding, 1000);
-        });
-        
-        // Обработчики клавиш для быстрого тестирования
-        document.addEventListener('keydown', function(event) {
-            if (event.ctrlKey) {
-                switch(event.key) {
-                    case '1':
-                        event.preventDefault();
-                        testEndpoint('/health');
-                        break;
-                    case '2':
-                        event.preventDefault();
-                        testEndpoint('/items');
-                        break;
-                    case '3':
-                        event.preventDefault();
-                        testEndpoint('/info');
-                        break;
-                    case 'r':
-                        event.preventDefault();
-                        runAllTests();
-                        break;
-                }
-            }
-        });
+        // Авто-тест при загрузке
+        testEndpoint('/health');
     </script>
 </body>
 </html>
