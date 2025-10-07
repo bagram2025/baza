@@ -5,19 +5,38 @@
   become: yes
   
   vars:
-    postgres_version: "15"
     db_name: "baza_db"
     db_user: "baza_user" 
     db_password: "baza_password_123"
 
   tasks:
+    - name: Get available PostgreSQL version
+      shell: |
+        apt-cache search ^postgresql-[0-9]+$ | head -1 | awk '{print $1}'
+      register: pg_version
+      changed_when: false
+
+    - name: Show available version
+      debug:
+        msg: "Available PostgreSQL: {{ pg_version.stdout }}"
+
     - name: Install PostgreSQL
       apt:
         name:
-          - postgresql-{{ postgres_version }}
-          - postgresql-contrib-{{ postgres_version }}
+          - postgresql
+          - postgresql-contrib
           - python3-psycopg2
         state: present
+
+    - name: Get installed PostgreSQL version
+      shell: |
+        psql --version | awk '{print $3}'
+      register: installed_version
+      changed_when: false
+
+    - name: Show installed version
+      debug:
+        msg: "Installed PostgreSQL: {{ installed_version.stdout }}"
 
     - name: Start PostgreSQL service
       systemd:
