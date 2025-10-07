@@ -1,0 +1,70 @@
+---
+- name: Install PostgreSQL
+  hosts: localhost
+  connection: local
+  become: yes
+  
+  vars:
+    postgres_version: "15"
+    db_name: "baza_db"
+    db_user: "baza_user" 
+    db_password: "baza_password_123"
+
+  tasks:
+    - name: Install PostgreSQL
+      apt:
+        name:
+          - postgresql-{{ postgres_version }}
+          - postgresql-contrib-{{ postgres_version }}
+          - python3-psycopg2
+        state: present
+
+    - name: Start PostgreSQL service
+      systemd:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Create database
+      become_user: postgres
+      postgresql_db:
+        name: "{{ db_name }}"
+        encoding: UTF8
+        state: present
+
+    - name: Create database user
+      become_user: postgres
+      postgresql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        db: "{{ db_name }}"
+        priv: ALL
+        state: present
+
+    - name: Create basic schema
+      become_user: postgres
+      postgresql_query:
+        db: "{{ db_name }}"
+        query: |
+          CREATE TABLE IF NOT EXISTS items (
+              id SERIAL PRIMARY KEY,
+              name VARCHAR(100) NOT NULL,
+              price DECIMAL(10,2) NOT NULL,
+              category VARCHAR(50),
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+
+          INSERT INTO items (name, price, category) VALUES
+          ('Ноутбук', 1299.99, 'электроника'),
+          ('Телефон', 899.99, 'электроника')
+          ON CONFLICT DO NOTHING;
+
+    - name: Test connection
+      shell: |
+        PGPASSWORD={{ db_password }} psql -h localhost -U {{ db_user }} -d {{ db_name }} -c "SELECT version();"
+      register: test_result
+      changed_when: false
+
+    - name: Show result
+      debug:
+        msg: "PostgreSQL установлен: {{ test_result.stdout }}"
