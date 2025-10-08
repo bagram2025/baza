@@ -57,7 +57,7 @@ location ~ \.py$ {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
   
-.       #Важно для JSON
+       #Важно для JSON
         proxy_set_header Accept application/json;
         proxy_hide_header Content-Length;
 
