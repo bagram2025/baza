@@ -57,12 +57,23 @@ location ~ \.py$ {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
   
-#Важно для JSON
+.       #Важно для JSON
         proxy_set_header Accept application/json;
         proxy_hide_header Content-Length;
 
 }
 
+
+location /telegram/ {
+    proxy_pass http://127.0.0.1:8005/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+}
+
+location /telegram-api/ {
+    proxy_pass http://127.0.0.1:8005/;
+    proxy_set_header Host $host;
+}
     # REST API
     location /restapi/ {
         proxy_pass http://127.0.0.1:8002;
