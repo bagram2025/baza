@@ -1,8 +1,10 @@
-# Обновляем pip
-pip3 install --upgrade pip
+cd /home/ubuntuuser/baza/telegram_service
 
-# Устанавливаем FastAPI и зависимости
-pip3 install fastapi uvicorn httpx
+# Создаем виртуальное окружение
+python3 -m venv venv
+source venv/bin/activate
 
-# Проверяем установку
-python3 -c "from fastapi import FastAPI; print('✅ FastAPI установлен')"
+# Устанавливаем зависимости в venv
+pip install fastapi uvicorn httpx
+
+python3 -c "import fastapi, uvicorn, httpx; print('✅ Все зависимости установлены')"
